@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Falling Sand Simulator</title>
+<style>
+    canvas {
+        border: 1px solid black;
+    }
+</style>
+</head>
+<body>
+<canvas id="sandCanvas" width="800" height="600"></canvas>
+<script>
+    // Setup canvas
+    const canvas = document.getElementById('sandCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // Define sand particle properties
+    const particleSize = 5;
+    const particleColor = '#FFD700'; // Sand color
+
+    // Define physics properties
+    const collapseThreshold = 3; // Threshold height for collapse
+    const collapseDelay = 10000; // Delay in milliseconds before collapse check
+
+    // Sand particle class
+    class SandParticle {
+        constructor(x, y) {
+            this.x = x;
+            this.y = y;
+        }
+
+        // Update particle position
+        update() {
+            // Move particle downward
+            this.y += particleSize;
+
+            // Check if particle reached bottom
+            if (this.y >= canvas.height - particleSize) {
+                this.y = canvas.height - particleSize;
+            }
+
+            // Check for collapse if tower is tall enough
+            if (this.y >= collapseThreshold * particleSize) {
+                this.checkForCollapse();
+            }
+
+            // Check for collision with other particles
+            this.handleCollisions();
+        }
+
+        // Check for collapse based on tower stability
+        checkForCollapse() {
+            // Count particles within a certain range horizontally
+            const leftCount = sandParticles.filter(p => p.x < this.x && p.y >= this.y - particleSize && p.y <= this.y + particleSize).length;
+            const rightCount = sandParticles.filter(p => p.x > this.x && p.y >= this.y - particleSize && p.y <= this.y + particleSize).length;
+
+            // Determine collapse direction based on particle count
+            if (leftCount > rightCount) {
+                this.x -= particleSize;
+            } else if (rightCount > leftCount) {
+                this.x += particleSize;
+            }
+        }
+
+        // Check for collision with other particles
+        handleCollisions() {
+            for (const particle of sandParticles) {
+                if (particle !== this && this.checkCollision(particle)) {
+                    this.y = particle.y - particleSize;
+                    break;
+                }
+            }
+        }
+
+        // Check collision with another particle
+        checkCollision(otherParticle) {
+            return (
+                this.x < otherParticle.x + particleSize &&
+                this.x + particleSize > otherParticle.x &&
+                this.y < otherParticle.y + particleSize &&
+                this.y + particleSize > otherParticle.y
+            );
+        }
+
+        // Render particle on canvas
+        render() {
+            ctx.fillStyle = particleColor;
+            ctx.fillRect(this.x, this.y, particleSize, particleSize);
+        }
+    }
+
+    // Array to store sand particles
+    const sandParticles = [];
+
+    // Function to create new sand particles
+    function createSandParticles(x, y) {
+        sandParticles.push(new SandParticle(x, y));
+    }
+
+    // Function to update and render particles
+    function updateAndRenderParticles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        for (const particle of sandParticles) {
+            particle.update();
+            particle.render();
+        }
+    }
+
+    // Main loop
+    function mainLoop() {
+        updateAndRenderParticles();
+        requestAnimationFrame(mainLoop);
+    }
+
+    // Event listener for mouse movement
+    canvas.addEventListener('mousemove', function(event) {
+        if (event.buttons === 1) { // Check if left mouse button is held down
+            createSandParticles(event.offsetX, event.offsetY);
+        }
+    });
+
+    // Start the simulator
+    mainLoop();
+</script>
+</body>
+</html>
